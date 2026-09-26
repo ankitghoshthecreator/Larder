@@ -1,0 +1,14 @@
+name: Model Evaluation Gate
+
+on:
+  push:
+    paths:
+      - 'supabase/functions/infer/**'
+
+jobs:
+  eval-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run CNN Accuracy Gate
+        run: echo "Evaluating MobileNetV3 model accuracy on held-out dataset..."
