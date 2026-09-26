@@ -3,6 +3,7 @@ package com.larder.app.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.larder.app.data.repository.InventoryRepository
+import com.larder.app.domain.calculator.ExpiryCalculator
 import com.larder.app.domain.model.Category
 import com.larder.app.domain.model.Item
 import com.larder.app.domain.model.ItemStatus
@@ -37,17 +38,82 @@ class InventoryViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true, householdId = householdId)
             
             repository.getInventoryItems(householdId).collect { itemList ->
-                _uiState.value = _uiState.value.copy(
-                    items = itemList,
-                    expiringItems = itemList.filter { item ->
-                        com.larder.app.domain.calculator.ExpiryCalculator.isExpiringSoon(item.expiryEstimate)
-                    },
-                    itemsNeedingReview = itemList.filter { item ->
-                        item.getItemStatusEnum() == ItemStatus.NEEDS_REVIEW
-                    },
-                    isLoading = false
-                )
+                if (itemList.isEmpty()) {
+                    seedSampleItems(householdId)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        items = itemList,
+                        expiringItems = itemList.filter { item ->
+                            ExpiryCalculator.isExpiringSoon(item.expiryEstimate)
+                        },
+                        itemsNeedingReview = itemList.filter { item ->
+                            item.getItemStatusEnum() == ItemStatus.NEEDS_REVIEW
+                        },
+                        isLoading = false
+                    )
+                }
             }
+        }
+    }
+
+    private fun seedSampleItems(householdId: String) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            
+            // 1. Organic Whole Milk (Expiring in 2 days)
+            repository.addItem(
+                householdId = householdId,
+                name = "Organic Whole Milk 1L",
+                category = Category.DAIRY,
+                quantity = 1.0,
+                unit = "L",
+                customExpiryMillis = now + (2 * 24 * 60 * 60 * 1000L),
+                status = ItemStatus.CONFIRMED
+            )
+
+            // 2. Fresh Avocados (Expiring in 3 days)
+            repository.addItem(
+                householdId = householdId,
+                name = "Fresh Avocados (4-pack)",
+                category = Category.PRODUCE,
+                quantity = 4.0,
+                unit = "unit",
+                customExpiryMillis = now + (3 * 24 * 60 * 60 * 1000L),
+                status = ItemStatus.CONFIRMED
+            )
+
+            // 3. Greek Yogurt (Expiring in 7 days)
+            repository.addItem(
+                householdId = householdId,
+                name = "Greek Yogurt 500g",
+                category = Category.DAIRY,
+                quantity = 1.0,
+                unit = "g",
+                customExpiryMillis = now + (7 * 24 * 60 * 60 * 1000L),
+                status = ItemStatus.CONFIRMED
+            )
+
+            // 4. Whole Wheat Bread (Needs Review)
+            repository.addItem(
+                householdId = householdId,
+                name = "Artisan Sliced Bread",
+                category = Category.BAKERY,
+                quantity = 1.0,
+                unit = "pack",
+                customExpiryMillis = now + (4 * 24 * 60 * 60 * 1000L),
+                status = ItemStatus.NEEDS_REVIEW
+            )
+
+            // 5. Frozen Pizza
+            repository.addItem(
+                householdId = householdId,
+                name = "Four Cheese Frozen Pizza",
+                category = Category.FROZEN,
+                quantity = 2.0,
+                unit = "unit",
+                customExpiryMillis = now + (60 * 24 * 60 * 60 * 1000L),
+                status = ItemStatus.CONFIRMED
+            )
         }
     }
 
