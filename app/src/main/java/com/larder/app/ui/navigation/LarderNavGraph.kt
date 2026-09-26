@@ -1,6 +1,5 @@
 package com.larder.app.ui.navigation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -70,7 +69,7 @@ fun LarderNavGraph(
         when (selectedTab) {
             LarderTab.HOME -> HomeScreen(viewModel = viewModel, onItemClick = {}, modifier = contentModifier)
             LarderTab.EXPIRING -> ExpiringScreen(viewModel = viewModel, onItemClick = {}, modifier = contentModifier)
-            LarderTab.SCAN -> ScanScreen(onScanCaptured = { _, _ -> }, modifier = contentModifier)
+            LarderTab.SCAN -> ScanScreen(viewModel = viewModel, onScanCaptured = { _, _ -> }, modifier = contentModifier)
             LarderTab.HOUSEHOLD -> HouseholdSettingsScreen(modifier = contentModifier)
         }
     }

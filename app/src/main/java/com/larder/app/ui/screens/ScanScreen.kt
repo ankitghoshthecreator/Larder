@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,20 +23,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.larder.app.feature.camera.ScanType
+import com.larder.app.feature.inference.InferenceClient
 import com.larder.app.ui.components.LarderButton
-import com.larder.app.ui.theme.BorderColor
+import com.larder.app.ui.theme.ClayAccent
 import com.larder.app.ui.theme.CreamBase
 import com.larder.app.ui.theme.DeepOliveText
 import com.larder.app.ui.theme.SurfaceCream
-
-enum class ScanMode { RECEIPT, SHELF }
+import com.larder.app.ui.viewmodel.InventoryViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun ScanScreen(
-    onScanCaptured: (ScanMode, String) -> Unit,
+    viewModel: InventoryViewModel,
+    onScanCaptured: (ScanType, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedMode by remember { mutableStateOf(ScanMode.RECEIPT) }
+    var selectedMode by remember { mutableStateOf(ScanType.RECEIPT) }
+    var isAnalyzing by remember { mutableStateOf(false) }
+    var resultMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val inferenceClient = remember { InferenceClient() }
 
     Column(
         modifier = modifier
@@ -63,39 +71,81 @@ fun ScanScreen(
             ) {
                 LarderButton(
                     text = "Receipt OCR Mode",
-                    onClick = { selectedMode = ScanMode.RECEIPT },
-                    isSecondary = selectedMode != ScanMode.RECEIPT,
+                    onClick = { selectedMode = ScanType.RECEIPT },
+                    isSecondary = selectedMode != ScanType.RECEIPT,
                     modifier = Modifier.weight(1f)
                 )
                 LarderButton(
                     text = "Shelf Photo Mode",
-                    onClick = { selectedMode = ScanMode.SHELF },
-                    isSecondary = selectedMode != ScanMode.SHELF,
+                    onClick = { selectedMode = ScanType.SHELF },
+                    isSecondary = selectedMode != ScanType.SHELF,
                     modifier = Modifier.weight(1f)
                 )
             }
         }
 
-        // Camera Viewport Box Placeholder
+        // Camera Viewport Box
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(380.dp)
+                .height(340.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(SurfaceCream),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = if (selectedMode == ScanMode.RECEIPT) "Align receipt within frame" else "Point camera at shelf",
-                color = DeepOliveText.copy(alpha = 0.6f),
-                fontSize = 16.sp
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = if (selectedMode == ScanType.RECEIPT) "Align receipt within frame" else "Point camera at shelf",
+                    color = DeepOliveText.copy(alpha = 0.6f),
+                    fontSize = 16.sp
+                )
+                if (resultMessage != null) {
+                    Text(
+                        text = resultMessage!!,
+                        color = ClayAccent,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                }
+            }
         }
 
-        // Capture Action
+        // Capture & Analyze Action Button
         LarderButton(
-            text = "Capture & Analyze",
-            onClick = { onScanCaptured(selectedMode, "sample_scan_path.jpg") },
+            text = if (isAnalyzing) "Analyzing Image..." else "Capture & Analyze",
+            onClick = {
+                scope.launch {
+                    isAnalyzing = true
+                    resultMessage = null
+                    
+                    val imagePath = "scans/captured_${selectedMode.name.lowercase()}.jpg"
+                    val result = inferenceClient.analyzeImage(
+                        householdId = viewModel.uiState.value.householdId,
+                        signedImagePath = imagePath,
+                        scanType = selectedMode
+                    )
+
+                    if (result.isSuccess) {
+                        val items = result.getOrThrow()
+                        items.forEach { item ->
+                            viewModel.addItem(
+                                name = item.name,
+                                category = item.getCategoryEnum(),
+                                quantity = item.quantity,
+                                unit = item.unit,
+                                customExpiryMillis = item.expiryEstimate,
+                                needsReview = item.getItemStatusEnum() == com.larder.app.domain.model.ItemStatus.NEEDS_REVIEW
+                            )
+                        }
+                        resultMessage = "Successfully detected & added ${items.size} items!"
+                    } else {
+                        resultMessage = "Analysis failed. Queued scan for retry."
+                    }
+                    isAnalyzing = false
+                }
+            },
+            enabled = !isAnalyzing,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp)
