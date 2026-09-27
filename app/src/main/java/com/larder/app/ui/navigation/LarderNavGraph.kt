@@ -70,7 +70,7 @@ fun LarderNavGraph(
             LarderTab.HOME -> HomeScreen(viewModel = viewModel, onItemClick = {}, modifier = contentModifier)
             LarderTab.EXPIRING -> ExpiringScreen(viewModel = viewModel, onItemClick = {}, modifier = contentModifier)
             LarderTab.SCAN -> ScanScreen(viewModel = viewModel, onScanCaptured = { _, _ -> }, modifier = contentModifier)
-            LarderTab.HOUSEHOLD -> HouseholdSettingsScreen(modifier = contentModifier)
+            LarderTab.HOUSEHOLD -> HouseholdSettingsScreen(viewModel = viewModel, modifier = contentModifier)
         }
     }
 }
