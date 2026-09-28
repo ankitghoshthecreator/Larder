@@ -1,0 +1,39 @@
+# Larder — .gitignore
+
+# ---- Build output ----
+build/
+app/build/
+.gradle/
+captures/
+out/
+*.class
+*.apk
+*.aab
+*.ap_
+
+# ---- Android Studio ----
+.idea/
+*.iml
+local.properties
+*.keystore
+!debug.keystore
+
+# ---- Gradle ----
+gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# ---- KSP / Kapt generated ----
+app/build/kspCaches/
+app/build/generated/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Supabase secrets ----
+.env
+.env.local
+supabase/.temp/
+
+# ---- Node (for Supabase functions) ----
+node_modules/

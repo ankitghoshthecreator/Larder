@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import com.larder.app.feature.household.HouseholdViewModel
 import com.larder.app.ui.screens.ExpiringScreen
 import com.larder.app.ui.screens.HomeScreen
 import com.larder.app.ui.screens.HouseholdSettingsScreen
@@ -32,17 +33,15 @@ enum class LarderTab(val title: String) {
 
 @Composable
 fun LarderNavGraph(
-    viewModel: InventoryViewModel,
+    inventoryViewModel: InventoryViewModel,
+    householdViewModel: HouseholdViewModel,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(LarderTab.HOME) }
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = SurfaceCream,
-                contentColor = DeepOliveText
-            ) {
+            NavigationBar(containerColor = SurfaceCream, contentColor = DeepOliveText) {
                 LarderTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = selectedTab == tab,
@@ -55,7 +54,6 @@ fun LarderNavGraph(
                         },
                         icon = { },
                         colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = ClayAccent,
                             selectedTextColor = ClayAccent,
                             indicatorColor = CreamBase
                         )
@@ -67,10 +65,14 @@ fun LarderNavGraph(
     ) { innerPadding ->
         val contentModifier = Modifier.padding(innerPadding)
         when (selectedTab) {
-            LarderTab.HOME -> HomeScreen(viewModel = viewModel, onItemClick = {}, modifier = contentModifier)
-            LarderTab.EXPIRING -> ExpiringScreen(viewModel = viewModel, onItemClick = {}, modifier = contentModifier)
-            LarderTab.SCAN -> ScanScreen(viewModel = viewModel, onScanCaptured = { _, _ -> }, modifier = contentModifier)
-            LarderTab.HOUSEHOLD -> HouseholdSettingsScreen(viewModel = viewModel, modifier = contentModifier)
+            LarderTab.HOME -> HomeScreen(viewModel = inventoryViewModel, onItemClick = {}, modifier = contentModifier)
+            LarderTab.EXPIRING -> ExpiringScreen(viewModel = inventoryViewModel, onItemClick = {}, modifier = contentModifier)
+            LarderTab.SCAN -> ScanScreen(viewModel = inventoryViewModel, onScanCaptured = { _, _ -> }, modifier = contentModifier)
+            LarderTab.HOUSEHOLD -> HouseholdSettingsScreen(
+                viewModel = inventoryViewModel,
+                householdViewModel = householdViewModel,
+                modifier = contentModifier
+            )
         }
     }
 }
