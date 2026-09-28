@@ -18,10 +18,6 @@ local.properties
 *.keystore
 !debug.keystore
 
-# ---- Gradle ----
-gradle/wrapper/gradle-wrapper.jar
-!gradle/wrapper/gradle-wrapper.properties
-
 # ---- KSP / Kapt generated ----
 app/build/kspCaches/
 app/build/generated/
